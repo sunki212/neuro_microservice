@@ -1,0 +1,41 @@
+services:
+  # Брокер сообщений (Почта)
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672" # Веб-интерфейс
+      - "5672:5672"   # Порт для общения программ
+
+  # Сервис отправки признаков
+  features:
+    build: .
+    command: python features.py
+    depends_on:
+      - rabbitmq
+    restart: always
+
+  # Сервис модели для предсказания
+  model:
+    build: .
+    command: python model.py
+    depends_on:
+      - rabbitmq
+    restart: always
+
+  # Сервис метрик (отслеживает ошибки)
+  metric:
+    build: .
+    command: python metric.py
+    depends_on:
+      - rabbitmq
+    volumes:
+      - ./logs:/app/logs # Связываем папку logs на машине и внутри контейнера
+    restart: always
+
+  # 5. Сервис графиков
+  plot:
+    build: .
+    command: python plot.py
+    volumes:
+      - ./logs:/app/logs
+    restart: always
